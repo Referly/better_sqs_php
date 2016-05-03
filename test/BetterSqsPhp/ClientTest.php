@@ -13,6 +13,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	protected $client;
 	protected $configuration;
 	protected $sqs;
+	protected $queueName;
 
 	public function setUp()
 	{
@@ -46,7 +47,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	public function testUrlForQueueCallsSqsCreateQueueWithQueueName()
 	{
-		$queueName = 'abracadabra';
+		$this->queueName = 'abracadabra';
 
 		$this->sqs = $this->getMockBuilder('SqsClient')
 			->disableOriginalConstructor()
@@ -68,16 +69,42 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 		$this->sqs->expects($this->once())
 			->method('createQueue')
-			->with(['QueueName' => $queueName])
+			->with(['QueueName' => $this->queueName])
 			->willReturn($createQueueResult);
 
 		$this->client = new Client($this->configuration, $this->sqs);
 
-		$this->client->urlForQueue($queueName);
+		$this->client->urlForQueue($this->queueName);
 	}
 
 	public function testUrlForQueueReturnsQueueUrl()
 	{
+		$queueUrl = 'sqs://someQueueUrl';
 
+		$this->sqs = $this->getMockBuilder('SqsClient')
+			->disableOriginalConstructor()
+			->setMethods([
+				'createQueue',
+			])
+			->getMock();
+
+		$createQueueResult = $this->getMockBuilder('Model')
+			->disableOriginalConstructor()
+			->setMethods([
+				'get'
+			])
+			->getMock();
+
+		$createQueueResult->expects($this->any())
+			->method('get')
+			->willReturn($queueUrl);
+
+		$this->sqs->expects($this->any())
+			->method('createQueue')
+			->willReturn($createQueueResult);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->assertEquals($queueUrl, $this->client->urlForQueue($this->queueName));
 	}
 }
