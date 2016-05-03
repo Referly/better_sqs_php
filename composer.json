@@ -1,0 +1,22 @@
+{
+  "name": "Referly/BetterSqsPhp",
+  "type": "library",
+  "description": "PHP library with BetterSqs API",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Courtland Caldwell",
+      "email": "courtland@mattermark.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.2",
+    "aws/aws-sdk-php": "2.*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "4.8.*"
+  },
+  "autoload": {
+    "psr-0": { "BetterSqsPhp": "src/" }
+  }
+}
