@@ -38,3 +38,8 @@
 
 # Composer PHAR
 /composer.phar
+
+#Intelij
+.idea
+.idea/
+.idea/*
