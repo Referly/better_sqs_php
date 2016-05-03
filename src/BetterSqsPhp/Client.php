@@ -39,9 +39,21 @@ class Client
 		]);
 	}
 
-	public function reserve($queueName, $maxNumberOfMessages = 1)
+	/**
+	 * @param string $queueName
+	 * @return mixed|null
+	 */
+	public function reserve($queueName)
 	{
-
+		$resp = $this->sqs->receiveMessage([
+			'QueueUrl' => $this->urlForQueue($queueName),
+			'MaxNumberOfMessages' => 1,
+		]);
+		if(count($resp['Messages']) > 0) {
+			return new Message($sqsMessage = $resp['Messages'][0], $queue = $queueName, $queueClient = $this);
+		} else {
+			return null;
+		}
 	}
 
 	public function delete(Message $message)
