@@ -3,14 +3,25 @@ namespace BetterSqsPhp;
 
 class Message
 {
+	/**
+	 * @var string
+	 */
 	protected $sqsMessage;
-	protected $client;
-	protected $queue;
 
-	public function __construct($sqsMessage, $queue, $client)
+	/**
+	 * @var Client
+	 */
+	protected $client;
+
+	/**
+	 * @var string the name of the queue where the message originated
+	 */
+	protected $queueName;
+
+	public function __construct($sqsMessage, $queueName, Client $client)
 	{
 		$this->sqsMessage = $sqsMessage;
-		$this->queue = $queue;
+		$this->queueName = $queueName;
 		$this->client = $client;
 	}
 
@@ -31,6 +42,6 @@ class Message
 
 	public function delete()
 	{
-
+		$this->client->delete($this);
 	}
 }
