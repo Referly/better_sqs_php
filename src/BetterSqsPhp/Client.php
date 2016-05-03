@@ -59,6 +59,10 @@ class Client
 		return $this->sqs();
 	}
 
+	/**
+	 * @param string $queueName
+	 * @return string
+	 */
 	public function urlForQueue($queueName)
 	{
 		$result = $this->sqs->createQueue([

@@ -17,6 +17,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	public function setUp()
 	{
+		$this->queueName = 'abracadabra';
 		$this->configuration = new Configuration;
 	}
 
@@ -45,9 +46,48 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($this->sqs, $this->client->getSqs());
 	}
 
+	public function testPushSendsMessageToSqs()
+	{
+		$queueUrl = 'sqs://someQueueUrl';
+		$messageBody = 'please read this important message.';
+
+		$this->sqs = $this->getMockBuilder('SqsClient')
+			->disableOriginalConstructor()
+			->setMethods([
+				'createQueue',
+				'sendMessage'
+			])
+			->getMock();
+
+		$createQueueResult = $this->getMockBuilder('Model')
+			->disableOriginalConstructor()
+			->setMethods([
+				'get'
+			])
+			->getMock();
+
+		$createQueueResult->expects($this->any())
+			->method('get')
+			->willReturn($queueUrl);
+
+		$this->sqs->expects($this->any())
+			->method('createQueue')
+			->willReturn($createQueueResult);
+
+		$this->sqs->expects($this->once())
+			->method('sendMessage')
+			->with([
+				'QueueUrl' => $queueUrl,
+				'MessageBody' => $messageBody,
+			]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->client->push($this->queueName, $messageBody);
+	}
+
 	public function testUrlForQueueCallsSqsCreateQueueWithQueueName()
 	{
-		$this->queueName = 'abracadabra';
 
 		$this->sqs = $this->getMockBuilder('SqsClient')
 			->disableOriginalConstructor()
