@@ -21,8 +21,9 @@ class Client
 		// If no SQS Client is provided, build a new one.
 		if(is_null($sqsClient)) {
 			$this->sqs = $this->build_default_sqs_client();
+		} else {
+			$this->sqs = $sqsClient;
 		}
-		$this->sqs = $sqsClient;
 	}
 
 	/**
