@@ -40,6 +40,11 @@ class Message
 		return $this->sqsMessage['ReceiptHandle'];
 	}
 
+	public function queueName()
+	{
+		return $this->queueName;
+	}
+
 	public function delete()
 	{
 		$this->client->delete($this);

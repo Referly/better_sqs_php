@@ -58,7 +58,10 @@ class Client
 
 	public function delete(Message $message)
 	{
-
+		return $this->sqs->deleteMessage([
+			'QueueUrl' => $this->urlForQueue($message->queueName()),
+			'ReceiptHandle' => $message->receiptHandle(),
+		]);
 	}
 
 	public function sqs()
