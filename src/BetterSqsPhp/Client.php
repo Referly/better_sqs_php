@@ -56,6 +56,10 @@ class Client
 		}
 	}
 
+	/**
+	 * @param Message $message
+	 * @return \Guzzle\Service\Resource\Model
+	 */
 	public function delete(Message $message)
 	{
 		return $this->sqs->deleteMessage([

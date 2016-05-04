@@ -4,6 +4,7 @@ namespace Test\BetterSqsPhp;
 
 use BetterSqsPhp\Client;
 use BetterSqsPhp\Configuration;
+use BetterSqsPhp\Message;
 use PHPUnit_Framework_TestCase;
 use Aws\Sqs\SqsClient;
 use Guzzle\Service\Resource\Model;
@@ -15,11 +16,13 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	protected $sqs;
 	protected $queueName;
 	protected $queueUrl;
+	protected $receiptHandle;
 
 	public function setUp()
 	{
 		$this->queueName = 'abracadabra';
 		$this->queueUrl = 'sqs://someQueueUrl';
+		$this->receiptHandle = '1eee';
 		$this->configuration = new Configuration;
 	}
 
@@ -36,6 +39,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 				'createQueue',
 				'sendMessage',
 				'receiveMessage',
+				'deleteMessage',
 			])
 			->getMock();
 
@@ -75,6 +79,30 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->client = new Client($this->configuration, $this->sqs);
 
 		$this->assertEquals($this->sqs, $this->client->getSqs());
+	}
+
+	public function testDeleteInformsSqsThatOfMessageToDelete()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->once())
+			->method('deleteMessage')
+			->with([
+				'QueueUrl' => $this->queueUrl,
+				'ReceiptHandle' => $this->receiptHandle,
+			]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$message = new Message(
+			[
+				'Body' => 'Read this message please.',
+				'ReceiptHandle' => $this->receiptHandle,
+			],
+			$this->queueName,
+			$this->client);
+
+		$this->client->delete($message);
 	}
 
 	public function testPushSendsMessageToSqs()
@@ -193,7 +221,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 			->willReturn(['Messages' => [
 				[
 					'Body' => 'READ THIS MESSAGE',
-					'ReceiptHandle' => '1eee',
+					'ReceiptHandle' => $this->receiptHandle,
 				]
 			]]);
 
@@ -203,7 +231,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 		$this->assertInstanceOf('BetterSqsPhp\Message', $message);
 		$this->assertEquals('READ THIS MESSAGE', $message->body());
-		$this->assertEquals('1eee', $message->receiptHandle());
+		$this->assertEquals($this->receiptHandle, $message->receiptHandle());
 	}
 
 	public function testUrlForQueueCallsSqsCreateQueueWithQueueName()
