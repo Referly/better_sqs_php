@@ -49,7 +49,7 @@ class Client
 			'QueueUrl' => $this->urlForQueue($queueName),
 			'MaxNumberOfMessages' => 1,
 		]);
-		if(count($resp['Messages']) > 0) {
+		if($this->canReadMessage($resp)) {
 			return new Message($sqsMessage = $resp['Messages'][0], $queue = $queueName, $queueClient = $this);
 		} else {
 			return null;
@@ -95,5 +95,10 @@ class Client
 		return SqsClient::factory([
 			'region'  => $this->configuration->getAwsRegion(),
 		]);
+	}
+
+	protected function canReadMessage($sqsResponse)
+	{
+		return isset($sqsResponse['Messages']) && is_array($sqsResponse['Messages']) && count($sqsResponse['Messages']) > 0;
 	}
 }

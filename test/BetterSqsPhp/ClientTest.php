@@ -14,16 +14,47 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	protected $configuration;
 	protected $sqs;
 	protected $queueName;
+	protected $queueUrl;
 
 	public function setUp()
 	{
 		$this->queueName = 'abracadabra';
+		$this->queueUrl = 'sqs://someQueueUrl';
 		$this->configuration = new Configuration;
 	}
 
 	public function tearDown()
 	{
 
+	}
+
+	protected function getSqsClient()
+	{
+		$sqsClient = $this->getMockBuilder('SqsClient')
+			->disableOriginalConstructor()
+			->setMethods([
+				'createQueue',
+				'sendMessage',
+				'receiveMessage',
+			])
+			->getMock();
+
+		$createQueueResult = $this->getMockBuilder('Model')
+			->disableOriginalConstructor()
+			->setMethods([
+				'get'
+			])
+			->getMock();
+
+		$createQueueResult->expects($this->any())
+			->method('get')
+			->willReturn($this->queueUrl);
+
+		$sqsClient->expects($this->any())
+			->method('createQueue')
+			->willReturn($createQueueResult);
+
+		return $sqsClient;
 	}
 
 	public function testConstructWhenSqsClientIsNullBuildsDefaultSqsClient()
@@ -48,7 +79,6 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	public function testPushSendsMessageToSqs()
 	{
-		$queueUrl = 'sqs://someQueueUrl';
 		$messageBody = 'please read this important message.';
 
 		$this->sqs = $this->getMockBuilder('SqsClient')
@@ -68,7 +98,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 		$createQueueResult->expects($this->any())
 			->method('get')
-			->willReturn($queueUrl);
+			->willReturn($this->queueUrl);
 
 		$this->sqs->expects($this->any())
 			->method('createQueue')
@@ -77,13 +107,103 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->sqs->expects($this->once())
 			->method('sendMessage')
 			->with([
-				'QueueUrl' => $queueUrl,
+				'QueueUrl' => $this->queueUrl,
 				'MessageBody' => $messageBody,
 			]);
 
 		$this->client = new Client($this->configuration, $this->sqs);
 
 		$this->client->push($this->queueName, $messageBody);
+	}
+
+	public function testReserveAsksSqsForOneMessage()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->once())
+			->method('receiveMessage')
+			->with([
+				'QueueUrl' => $this->queueUrl,
+				'MaxNumberOfMessages' => 1,
+			]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->client->reserve($this->queueName);
+	}
+
+	public function testReserveIsNullIfSqsReturnsNonArray()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->any())
+			->method('receiveMessage')
+			->willReturn('notAnArray');
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->assertNull($this->client->reserve($this->queueName));
+	}
+
+	public function testReserveIsNullIfSqsReturnsArrayWithoutMessagesKey()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->any())
+			->method('receiveMessage')
+			->willReturn([]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->assertNull($this->client->reserve($this->queueName));
+	}
+
+	public function testReserveIsNullIfSqsReturnsArrayWithMessagesKeyHavingNonArrayValue()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->any())
+			->method('receiveMessage')
+			->willReturn(['Messages' => 12345]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->assertNull($this->client->reserve($this->queueName));
+	}
+
+	public function testReserveIsNullIfSqsReturnsZeroMessages()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->any())
+			->method('receiveMessage')
+			->willReturn(['Messages' => []]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$this->assertNull($this->client->reserve($this->queueName));
+	}
+
+	public function testReserveIsAppropriateMessageInstanceIfSqsReturnsMessage()
+	{
+		$this->sqs = $this->getSqsClient();
+
+		$this->sqs->expects($this->any())
+			->method('receiveMessage')
+			->willReturn(['Messages' => [
+				[
+					'Body' => 'READ THIS MESSAGE',
+					'ReceiptHandle' => '1eee',
+				]
+			]]);
+
+		$this->client = new Client($this->configuration, $this->sqs);
+
+		$message = $this->client->reserve($this->queueName);
+
+		$this->assertInstanceOf('BetterSqsPhp\Message', $message);
+		$this->assertEquals('READ THIS MESSAGE', $message->body());
+		$this->assertEquals('1eee', $message->receiptHandle());
 	}
 
 	public function testUrlForQueueCallsSqsCreateQueueWithQueueName()
@@ -119,7 +239,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	public function testUrlForQueueReturnsQueueUrl()
 	{
-		$queueUrl = 'sqs://someQueueUrl';
+		$this->queueUrl = 'sqs://someQueueUrl';
 
 		$this->sqs = $this->getMockBuilder('SqsClient')
 			->disableOriginalConstructor()
@@ -137,7 +257,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 		$createQueueResult->expects($this->any())
 			->method('get')
-			->willReturn($queueUrl);
+			->willReturn($this->queueUrl);
 
 		$this->sqs->expects($this->any())
 			->method('createQueue')
@@ -145,6 +265,6 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 		$this->client = new Client($this->configuration, $this->sqs);
 
-		$this->assertEquals($queueUrl, $this->client->urlForQueue($this->queueName));
+		$this->assertEquals($this->queueUrl, $this->client->urlForQueue($this->queueName));
 	}
 }
