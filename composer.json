@@ -1,8 +1,10 @@
 {
-  "name": "Referly/BetterSqsPhp",
+  "name": "referly/better-sqs-php",
   "type": "library",
   "description": "PHP library with BetterSqs API",
   "license": "MIT",
+  "keywords": ["SQS", "sqs"],
+  "homepage": "https://github.com/Referly/better_sqs_php",
   "authors": [
     {
       "name": "Courtland Caldwell",
