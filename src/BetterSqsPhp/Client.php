@@ -96,9 +96,13 @@ class Client
 	 */
 	protected function build_default_sqs_client()
 	{
-		return SqsClient::factory([
-			'region'  => $this->configuration->getAwsRegion(),
-		]);
+		$config = [
+			'region'  => $this->configuration->getAwsRegion()
+		];
+		if($this->configuration->hasAwsCredentials()) {
+			$config['credentials'] = $this->configuration->getAwsCredentials();
+		};
+		return SqsClient::factory($config);
 	}
 
 	protected function canReadMessage($sqsResponse)
