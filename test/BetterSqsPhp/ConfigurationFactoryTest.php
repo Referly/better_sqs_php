@@ -31,4 +31,21 @@ class ConfigurationFactoryTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals('us-east-1', $configuration->getAwsRegion());
 	}
 
+	public function testCreateConfigurationWithSpecifiedCredentialsUsesSpecifiedCredentials()
+	{
+		$configuration = $this->factory->createConfiguration([
+			'credentials' => [
+				'key' => 'AKSKDDSK',
+				'secret' => 'MNQWENNWF'
+			],
+		]);
+		$this->assertEquals('AKSKDDSK', $configuration->getAwsCredentials()['key']);
+		$this->assertEquals('MNQWENNWF', $configuration->getAwsCredentials()['secret']);
+	}
+
+	public function testCreateConfigurationWithoutSpecifiedCredentialsUsesDefaultCredentials()
+	{
+		$configuration = $this->factory->createConfiguration([]);
+		$this->assertEquals([], $configuration->getAwsCredentials());
+	}
 }
