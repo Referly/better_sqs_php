@@ -6,6 +6,7 @@ Better SQS API for PHP
 ## Get a client
 
 ```php
+use BetterAwsPhpCore\Configuration;
 $configuration = new Configuration;
 $client = new Client($configuration);
 ```

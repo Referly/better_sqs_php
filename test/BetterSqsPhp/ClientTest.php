@@ -3,7 +3,7 @@
 namespace Test\BetterSqsPhp;
 
 use BetterSqsPhp\Client;
-use BetterSqsPhp\Configuration;
+use BetterAwsPhpCore\Configuration;
 use BetterSqsPhp\Message;
 use PHPUnit_Framework_TestCase;
 use Aws\Sqs\SqsClient;

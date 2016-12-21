@@ -2,7 +2,7 @@
 namespace BetterSqsPhp;
 
 use Aws\Sqs\SqsClient;
-
+use BetterAwsPhpCore\Configuration;
 class Client
 {
 	/**
